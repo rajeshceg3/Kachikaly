@@ -1,0 +1,50 @@
+:root {
+  /* Color Palette - Muted, Organic */
+  --color-mud-brown: #4a3b32;
+  --color-moss-green: #5c6b4b;
+  --color-cloud-sky: #aab6c2;
+  --color-faded-stone: #8c8c87;
+  --color-near-black: #0a0a0a;
+  --color-text-main: #dcdcd9;
+  --color-text-muted: #8c8c87;
+
+  /* Spacing & Typography */
+  --spacing-unit: 8px;
+  --font-main: 'Georgia', 'Times New Roman', serif; /* Human, breathable */
+  --letter-spacing-open: 0.05em;
+
+  /* Transitions */
+  --transition-slow: 0.8s ease-in-out;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-near-black);
+  color: var(--color-text-main);
+  font-family: var(--font-main);
+  letter-spacing: var(--letter-spacing-open);
+  line-height: 1.6;
+  overflow: hidden; /* Prevent default scrolling */
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Reset */
+* {
+  box-sizing: border-box;
+}
+
+h1, h2, h3, p {
+  margin: 0;
+  font-weight: normal;
+}
+
+/* Utility for centering if needed */
+.center-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
