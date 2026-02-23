@@ -7,6 +7,8 @@ afterEach(() => {
   cleanup();
 });
 
+/* eslint-disable no-undef */
+
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
   observe() {}
