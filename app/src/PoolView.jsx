@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, useMotionValue, useTransform, useSpring, useAnimationFrame, AnimatePresence } from 'framer-motion';
 import Background from './Background';
+import audioEngine from './audio/AudioEngine';
 
 const PoolView = () => {
   const depth = useMotionValue(0); // 0 to 100 representing proximity
@@ -52,10 +53,21 @@ const PoolView = () => {
   // Listen to depth changes for text triggers
   useEffect(() => {
     const unsubscribe = depth.on("change", (latest) => {
-      if (latest > 30 && latest < 60) {
+      audioEngine.setDepth(latest);
+      // console.log('Depth changed:', latest);
+
+      if (latest > 20 && latest < 35) {
         setActiveText("This pool is older than memory.");
-      } else if (latest > 70) {
+      } else if (latest > 35 && latest < 50) {
         setActiveText("They have remained when others disappeared.");
+      } else if (latest > 50 && latest < 65) {
+        setActiveText("Fertility rituals performed in silence.");
+      } else if (latest > 65 && latest < 80) {
+        setActiveText("Sacred crocodiles, the living ancestors.");
+      } else if (latest > 80 && latest < 90) {
+        setActiveText("Oral traditions carried by the wind.");
+      } else if (latest > 90) {
+        setActiveText("The museum preserves what remains.");
       } else {
         setActiveText(null);
       }

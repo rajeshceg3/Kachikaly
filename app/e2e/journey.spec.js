@@ -13,13 +13,18 @@ test.describe('Kachikaly Experience', () => {
     test.setTimeout(60000);
 
     // Wait for arrival animation to complete visually (approx 8s)
-    // We can verify the overlay opacity or just wait.
-    // The overlay is `div` with `z-index: 1000`.
-    // It fades out to opacity 0.
-    // We can check if it's not visible or has opacity 0.
-    // However, checking computed style is robust.
+    // Wait for "Click anywhere to begin" text to be visible
+    const startText = page.getByText('Click anywhere to begin');
+    await expect(startText).toBeVisible({ timeout: 10000 });
+
+    // Click anywhere to start the interaction (center of viewport)
+    let viewport = page.viewportSize();
+    if (!viewport) viewport = { width: 1280, height: 720 };
+
+    await page.mouse.click(viewport.width / 2, viewport.height / 2);
 
     // Instead of fixed wait, let's poll for opacity.
+    // The opacity decreases over 4 seconds after click.
     await expect.poll(async () => {
       const opacity = await page.locator('div[style*="z-index: 1000"]').evaluate(el => getComputedStyle(el).opacity);
       return parseFloat(opacity);
@@ -29,7 +34,6 @@ test.describe('Kachikaly Experience', () => {
     }).toBeLessThan(0.1);
 
     // Get viewport center
-    const viewport = page.viewportSize();
     const centerX = viewport.width / 2;
     const centerY = viewport.height / 2;
 
@@ -38,17 +42,17 @@ test.describe('Kachikaly Experience', () => {
     await page.mouse.down();
 
     // Wait for depth to increase and reveal first text
-    // Depth > 30 needed. Speed ~30 units/s. So ~1s.
-    // We wait 3s to be safe (increased for CI/WebKit).
-    await page.waitForTimeout(3000);
+    // Depth > 20 needed. Speed ~30 units/s. So ~0.7s.
+    // We check for visibility with a generous timeout instead of hard wait.
+    await expect(page.getByText('This pool is older than memory.')).toBeVisible({ timeout: 15000 });
 
-    await expect(page.getByText('This pool is older than memory.')).toBeVisible({ timeout: 10000 });
+    // Continue holding for second text (Depth > 35)
+    // This text appears after the first one fades out or is replaced.
+    // The previous text range is 20-35, next is 35-50.
+    // We need to keep holding down until the next text appears.
+    // Since we are already holding down, depth increases continuously.
 
-    // Continue holding for second text (Depth > 70)
-    // Needs another ~1.5s. Wait 3s more.
-    await page.waitForTimeout(3000);
-
-    await expect(page.getByText('They have remained when others disappeared.')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('They have remained when others disappeared.')).toBeVisible({ timeout: 15000 });
 
     await page.mouse.up();
   });

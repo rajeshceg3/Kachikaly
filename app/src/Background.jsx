@@ -1,4 +1,6 @@
 import React from 'react';
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'framer-motion';
 
 const Background = () => {
   return (
@@ -47,6 +49,51 @@ const Background = () => {
         borderRadius: '50%',
         filter: 'blur(30px)',
       }}></div>
+
+      {/* Subtle Ripples */}
+      <motion.div
+        animate={{
+          scale: [1, 1.1, 1],
+          opacity: [0.05, 0.08, 0.05],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        style={{
+          position: 'absolute',
+          bottom: '10%',
+          left: '20%',
+          width: '60%',
+          height: '20%',
+          background: 'radial-gradient(ellipse at center, rgba(170, 182, 194, 0.1) 0%, transparent 70%)',
+          filter: 'blur(30px)',
+          borderRadius: '50%',
+        }}
+      />
+      <motion.div
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.03, 0.06, 0.03],
+          x: [0, 20, 0]
+        }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
+        style={{
+          position: 'absolute',
+          bottom: '15%',
+          right: '20%',
+          width: '50%',
+          height: '15%',
+          background: 'radial-gradient(ellipse at center, rgba(170, 182, 194, 0.1) 0%, transparent 70%)',
+          filter: 'blur(40px)',
+          borderRadius: '50%',
+        }}
+      />
     </div>
   );
 };
