@@ -2,6 +2,14 @@ import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import PoolView from '../PoolView';
+import audioEngine from '../audio/AudioEngine';
+
+// Mock AudioEngine
+vi.mock('../audio/AudioEngine', () => ({
+  default: {
+    setDepth: vi.fn(),
+  },
+}));
 
 // Hoisted state
 const {
@@ -49,12 +57,19 @@ const {
 // Mock framer-motion
 vi.mock('framer-motion', async (importOriginal) => {
   const actual = await importOriginal();
+  const React = await import('react');
   return {
     ...actual,
     motion: {
       div: ({ children, ...props }) => <div {...props}>{children}</div>,
     },
-    useMotionValue: (initial) => createMotionValue(initial),
+    useMotionValue: (initial) => {
+      const ref = React.useRef(null);
+      if (!ref.current) {
+        ref.current = createMotionValue(initial);
+      }
+      return ref.current;
+    },
     useTransform: () => createMotionValue(1), // Return a dummy motion value
     useSpring: (source) => source, // Pass through
     useAnimationFrame: (cb) => {
@@ -148,17 +163,31 @@ describe('PoolView Component', () => {
     expect(depth.get()).toBe(100);
   });
 
-  it('reveals text based on depth', () => {
+  it('reveals text based on depth and updates audio', async () => {
     render(<PoolView />);
     const mvs = getMotionValues();
     const depth = mvs[0];
 
-    // Set depth manually
+    // Set depth for first text
+    act(() => {
+      depth.set(30);
+    });
+    expect(screen.getByText('This pool is older than memory.')).toBeInTheDocument();
+    expect(audioEngine.setDepth).toHaveBeenCalledWith(30);
+
+    // Set depth for second text
     act(() => {
       depth.set(40);
     });
+    expect(audioEngine.setDepth).toHaveBeenCalledWith(40);
+    expect(screen.getByText('They have remained when others disappeared.')).toBeInTheDocument();
 
-    expect(screen.getByText('This pool is older than memory.')).toBeInTheDocument();
+    // Set depth for deeper text
+    act(() => {
+      depth.set(60);
+    });
+    expect(audioEngine.setDepth).toHaveBeenCalledWith(60);
+    expect(screen.getByText('Fertility rituals performed in silence.')).toBeInTheDocument();
   });
 
   it('updates mouseX and mouseY on window mouse move', () => {
