@@ -42,17 +42,17 @@ test.describe('Kachikaly Experience', () => {
     await page.mouse.down();
 
     // Wait for depth to increase and reveal first text
-    // Depth > 30 needed. Speed ~30 units/s. So ~1s.
-    // We wait 3s to be safe (increased for CI/WebKit).
-    await page.waitForTimeout(3000);
+    // Depth > 20 needed. Speed ~30 units/s. So ~0.7s.
+    // We check for visibility with a generous timeout instead of hard wait.
+    await expect(page.getByText('This pool is older than memory.')).toBeVisible({ timeout: 15000 });
 
-    await expect(page.getByText('This pool is older than memory.')).toBeVisible({ timeout: 10000 });
+    // Continue holding for second text (Depth > 35)
+    // This text appears after the first one fades out or is replaced.
+    // The previous text range is 20-35, next is 35-50.
+    // We need to keep holding down until the next text appears.
+    // Since we are already holding down, depth increases continuously.
 
-    // Continue holding for second text (Depth > 70)
-    // Needs another ~1.5s. Wait 3s more.
-    await page.waitForTimeout(3000);
-
-    await expect(page.getByText('They have remained when others disappeared.')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('They have remained when others disappeared.')).toBeVisible({ timeout: 15000 });
 
     await page.mouse.up();
   });
