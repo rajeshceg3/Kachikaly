@@ -9,7 +9,10 @@ const PoolView = () => {
   const isMoving = useRef(false);
   const [activeText, setActiveText] = useState(null);
   const [isIdle, setIsIdle] = useState(false);
+  const [showCompass, setShowCompass] = useState(false);
+
   const idleTimer = useRef(null);
+  const hesitationTimer = useRef(null);
 
   // Mouse parallax values
   const mouseX = useMotionValue(0);
@@ -23,32 +26,66 @@ const PoolView = () => {
   const scale = useTransform(depth, [0, 100], [1, 1.5]);
 
   // Timer logic
-  const startTimer = useCallback(() => {
+  const startIdleTimer = useCallback(() => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
     idleTimer.current = setTimeout(() => setIsIdle(true), 120000);
   }, []);
 
-  const resetIdleTimer = useCallback(() => {
+  const startHesitationTimer = useCallback(() => {
+    if (hesitationTimer.current) clearTimeout(hesitationTimer.current);
+    hesitationTimer.current = setTimeout(() => {
+      if (!isMoving.current) setShowCompass(true);
+    }, 5000);
+  }, []);
+
+  const resetTimers = useCallback(() => {
     setIsIdle(false);
-    startTimer();
-  }, [startTimer]);
+    setShowCompass(false);
+    startIdleTimer();
+    startHesitationTimer();
+  }, [startIdleTimer, startHesitationTimer]);
 
+  // Initialize Audio on first interaction
   useEffect(() => {
-    window.addEventListener('mousemove', resetIdleTimer);
-    window.addEventListener('mousedown', resetIdleTimer);
-    window.addEventListener('touchstart', resetIdleTimer);
-    window.addEventListener('wheel', resetIdleTimer);
+    const initAudio = () => {
+      audioEngine.play();
+      window.removeEventListener('mousemove', initAudio);
+      window.removeEventListener('mousedown', initAudio);
+      window.removeEventListener('touchstart', initAudio);
+      window.removeEventListener('wheel', initAudio);
+    };
 
-    startTimer(); // Just start timer on mount
+    window.addEventListener('mousemove', initAudio);
+    window.addEventListener('mousedown', initAudio);
+    window.addEventListener('touchstart', initAudio);
+    window.addEventListener('wheel', initAudio);
 
     return () => {
-      window.removeEventListener('mousemove', resetIdleTimer);
-      window.removeEventListener('mousedown', resetIdleTimer);
-      window.removeEventListener('touchstart', resetIdleTimer);
-      window.removeEventListener('wheel', resetIdleTimer);
-      if (idleTimer.current) clearTimeout(idleTimer.current);
+      window.removeEventListener('mousemove', initAudio);
+      window.removeEventListener('mousedown', initAudio);
+      window.removeEventListener('touchstart', initAudio);
+      window.removeEventListener('wheel', initAudio);
     };
-  }, [resetIdleTimer, startTimer]);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('mousemove', resetTimers);
+    window.addEventListener('mousedown', resetTimers);
+    window.addEventListener('touchstart', resetTimers);
+    window.addEventListener('wheel', resetTimers);
+
+    startIdleTimer(); // Just start timer on mount
+    startHesitationTimer();
+
+    return () => {
+      window.removeEventListener('mousemove', resetTimers);
+      window.removeEventListener('mousedown', resetTimers);
+      window.removeEventListener('touchstart', resetTimers);
+      window.removeEventListener('wheel', resetTimers);
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+      if (hesitationTimer.current) clearTimeout(hesitationTimer.current);
+    };
+  }, [resetTimers, startIdleTimer, startHesitationTimer]);
 
   // Listen to depth changes for text triggers
   useEffect(() => {
@@ -101,10 +138,10 @@ const PoolView = () => {
 
   return (
     <div
-      onMouseDown={() => { isMoving.current = true; resetIdleTimer(); }}
+      onMouseDown={() => { isMoving.current = true; resetTimers(); }}
       onMouseUp={() => isMoving.current = false}
       onMouseLeave={() => isMoving.current = false}
-      onTouchStart={() => { isMoving.current = true; resetIdleTimer(); }}
+      onTouchStart={() => { isMoving.current = true; resetTimers(); }}
       onTouchEnd={() => isMoving.current = false}
       style={{
         width: '100vw',
@@ -140,6 +177,43 @@ const PoolView = () => {
         background: 'radial-gradient(circle, transparent 60%, var(--color-near-black) 100%)',
         opacity: 0.4
       }}></div>
+
+      {/* Compass Indicator - Appears on hesitation */}
+      <AnimatePresence>
+        {showCompass && (
+           <motion.div
+             data-testid="compass"
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             transition={{ duration: 1 }}
+             style={{
+               position: 'absolute',
+               bottom: '40px',
+               right: '40px',
+               width: '40px',
+               height: '40px',
+               border: '1px solid var(--color-text-muted)',
+               borderRadius: '50%',
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+               pointerEvents: 'none',
+               color: 'var(--color-text-muted)'
+             }}
+           >
+             {/* Simple arrow pointing up (forward) */}
+             <div style={{
+               width: 0,
+               height: 0,
+               borderLeft: '5px solid transparent',
+               borderRight: '5px solid transparent',
+               borderBottom: '15px solid currentColor',
+               transform: 'translateY(-2px)'
+             }} />
+           </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Text Overlay - Fades out when idle */}
       <AnimatePresence>
