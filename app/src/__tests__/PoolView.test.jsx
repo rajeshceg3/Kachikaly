@@ -8,6 +8,7 @@ import audioEngine from '../audio/AudioEngine';
 vi.mock('../audio/AudioEngine', () => ({
   default: {
     setDepth: vi.fn(),
+    play: vi.fn(),
   },
 }));
 
@@ -104,17 +105,9 @@ describe('PoolView Component', () => {
     render(<PoolView />);
     const mvs = getMotionValues();
     // Assuming order: depth (0), mouseX (0), mouseY (0)
-    // PoolView code:
-    // const depth = useMotionValue(0);
-    // const mouseX = useMotionValue(0);
-    // const mouseY = useMotionValue(0);
-
-    // So mvs[0] is depth.
     const depth = mvs[0];
 
     // Simulate mouse down to set isMoving = true
-    // We need to target the container that has onMouseDown
-    // It's the root div.
     const container = screen.getByTestId('background').parentElement.parentElement;
     fireEvent.mouseDown(container);
 
@@ -193,14 +186,11 @@ describe('PoolView Component', () => {
   it('updates mouseX and mouseY on window mouse move', () => {
     render(<PoolView />);
     const mvs = getMotionValues();
-    // mvs[0] is depth. mvs[1] is mouseX, mvs[2] is mouseY.
     const mouseX = mvs[1];
     const mouseY = mvs[2];
 
     fireEvent.mouseMove(window, { clientX: 100, clientY: 100 });
 
-    // Logic: x = (clientX - window.innerWidth / 2) * 0.05
-    // Default jsdom window size: 1024x768 (default)
     const expectedX = (100 - window.innerWidth / 2) * 0.05;
     const expectedY = (100 - window.innerHeight / 2) * 0.05;
 
@@ -224,5 +214,30 @@ describe('PoolView Component', () => {
     const { unmount } = render(<PoolView />);
     unmount();
     // Verify no errors and coverage hits cleanup
+  });
+
+  it('initializes audio on first interaction', () => {
+    render(<PoolView />);
+    expect(audioEngine.play).not.toHaveBeenCalled();
+
+    fireEvent.mouseMove(window);
+    expect(audioEngine.play).toHaveBeenCalledTimes(1);
+
+    fireEvent.mouseDown(window);
+    expect(audioEngine.play).toHaveBeenCalledTimes(1); // Should still be 1
+  });
+
+  it('shows compass when hesitating (idle 5s) and hides on activity', () => {
+    render(<PoolView />);
+    expect(screen.queryByTestId('compass')).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    expect(screen.getByTestId('compass')).toBeInTheDocument();
+
+    fireEvent.mouseMove(window);
+    expect(screen.queryByTestId('compass')).not.toBeInTheDocument();
   });
 });
