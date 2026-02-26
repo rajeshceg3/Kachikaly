@@ -26,6 +26,7 @@ describe('AudioEngine', () => {
   afterEach(() => {
     // Restore
     window.AudioContext = originalAudioContext;
+    vi.useRealTimers();
   });
 
   it('initializes AudioContext and nodes', () => {
@@ -39,7 +40,8 @@ describe('AudioEngine', () => {
     expect(audioEngine.waterNode).toBeDefined();
   });
 
-  it('plays audio (resumes context)', () => {
+  it('plays audio (resumes context) and starts loops', () => {
+    vi.useFakeTimers();
     audioEngine.init();
     // Initial state is suspended in our mock
     expect(audioEngine.context.state).toBe('suspended');
@@ -47,15 +49,55 @@ describe('AudioEngine', () => {
     audioEngine.play();
     expect(audioEngine.context.state).toBe('running');
     expect(audioEngine.isPlaying).toBe(true);
+
+    // Timers should be set
+    expect(audioEngine.birdTimer).toBeDefined();
+    expect(audioEngine.leafTimer).toBeDefined();
   });
 
-  it('pauses audio', () => {
+  it('triggers bird calls', () => {
+    vi.useFakeTimers();
     audioEngine.init();
     audioEngine.play();
+
+    const createOscillatorSpy = vi.spyOn(audioEngine.context, 'createOscillator');
+
+    // Fast forward enough to trigger a bird call (delay is 2000-7000ms initially)
+    vi.advanceTimersByTime(8000);
+
+    expect(createOscillatorSpy).toHaveBeenCalled();
+  });
+
+  it('triggers leaf rustle', () => {
+    vi.useFakeTimers();
+    audioEngine.init();
+    audioEngine.play();
+
+    // Reset spy on createBufferSource (called during init for wind/water)
+    const createBufferSourceSpy = vi.spyOn(audioEngine.context, 'createBufferSource');
+    createBufferSourceSpy.mockClear();
+
+    // Fast forward (delay 1000-6000ms)
+    vi.advanceTimersByTime(7000);
+
+    expect(createBufferSourceSpy).toHaveBeenCalled();
+  });
+
+  it('pauses audio and stops loops', () => {
+    vi.useFakeTimers();
+    audioEngine.init();
+    audioEngine.play();
+
+    expect(audioEngine.isPlaying).toBe(true);
+
     audioEngine.pause();
     expect(audioEngine.isPlaying).toBe(false);
-    // Note: pause() in our implementation just ramps gain down, doesn't suspend context immediately
-    // so checking context state might still be 'running', which is fine.
+
+    // We can't easily check if timer is cleared in JS without spying on clearTimeout
+    // but we can check if isPlaying prevents new calls
+    const createOscillatorSpy = vi.spyOn(audioEngine.context, 'createOscillator');
+    vi.advanceTimersByTime(20000);
+    expect(createOscillatorSpy).not.toHaveBeenCalled();
   });
 
   it('adjusts volume based on depth', () => {
