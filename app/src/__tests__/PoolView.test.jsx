@@ -240,4 +240,22 @@ describe('PoolView Component', () => {
     fireEvent.mouseMove(window);
     expect(screen.queryByTestId('compass')).not.toBeInTheDocument();
   });
+
+  it('hides compass when deeply idle (Reflection mode)', () => {
+    render(<PoolView />);
+    // Initial wait for compass (5s)
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(screen.getByTestId('compass')).toBeInTheDocument();
+
+    // Advance to idle timeout (120s total)
+    // We already advanced 5s, so need 115s more
+    act(() => {
+      vi.advanceTimersByTime(115000);
+    });
+
+    // Compass should be gone
+    expect(screen.queryByTestId('compass')).not.toBeInTheDocument();
+  });
 });
