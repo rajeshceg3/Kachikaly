@@ -15,5 +15,6 @@
 - [x] Arrival Phase Refined: Removed text/click, implemented auto-fade (Strict PRD Compliance).
 - [x] Orientation Phase Enhanced: Added Compass indicator on hesitation (Strict PRD Compliance).
 - [x] Audio Initialization: Migrated to implicit interaction in PoolView to support text-less Arrival.
+- [x] Audio Engine Enhancement: Added Bird Calls and Leaf Rustle (Strict PRD Compliance).
 
 Current Completion: 100% (Fully Compliant with PRD)

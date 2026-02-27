@@ -8,6 +8,8 @@ class AudioEngine {
     this.waterGain = null;
     this.isInitialized = false;
     this.isPlaying = false;
+    this.birdTimer = null;
+    this.leafTimer = null;
   }
 
   init() {
@@ -23,6 +25,8 @@ class AudioEngine {
 
       this.setupWind();
       this.setupWater();
+      this.setupBirds();
+      this.setupLeaves();
 
       this.isInitialized = true;
     } catch (e) {
@@ -101,6 +105,81 @@ class AudioEngine {
     this.waterNode.start(0);
   }
 
+  setupBirds() {
+    // Birds use transient oscillators, no persistent setup needed
+  }
+
+  setupLeaves() {
+    // Leaves use transient noise bursts
+  }
+
+  triggerLeafRustle() {
+    if (!this.context || !this.waterNode) return;
+
+    // Reuse water noise buffer for leaves (pink noise is good for rustle)
+    const source = this.context.createBufferSource();
+    source.buffer = this.waterNode.buffer;
+
+    // Filter for leaf crunch sound (bandpass/highpass)
+    const filter = this.context.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 2500;
+    filter.Q.value = 1;
+
+    const gain = this.context.createGain();
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+
+    // Envelope
+    const now = this.context.currentTime;
+    const duration = 0.3 + Math.random() * 0.2; // Short duration
+
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.05); // Sharp attack
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    // Random start position in buffer
+    const offset = Math.random() * (source.buffer.duration - duration);
+    source.start(now, offset, duration);
+
+    // Schedule next
+    if (this.isPlaying) {
+      const delay = Math.random() * 8000 + 4000; // 4-12s
+      this.leafTimer = setTimeout(() => this.triggerLeafRustle(), delay);
+    }
+  }
+
+  triggerBirdCall() {
+    if (!this.context) return;
+
+    const osc = this.context.createOscillator();
+    const gain = this.context.createGain();
+
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+
+    // Randomize bird call
+    // A simple chirp: high pitch dropping fast
+    const startFreq = 2000 + Math.random() * 1000;
+    osc.frequency.setValueAtTime(startFreq, this.context.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(startFreq * 0.5, this.context.currentTime + 0.1);
+
+    gain.gain.setValueAtTime(0, this.context.currentTime);
+    gain.gain.linearRampToValueAtTime(0.05, this.context.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.context.currentTime + 0.1);
+
+    osc.start(this.context.currentTime);
+    osc.stop(this.context.currentTime + 0.1);
+
+    // Schedule next call
+    if (this.isPlaying) {
+      const delay = Math.random() * 10000 + 5000; // 5-15s
+      this.birdTimer = setTimeout(() => this.triggerBirdCall(), delay);
+    }
+  }
+
   play() {
     if (!this.isInitialized) this.init();
     if (this.context && this.context.state === 'suspended') {
@@ -113,7 +192,17 @@ class AudioEngine {
       this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.context.currentTime);
       this.masterGain.gain.linearRampToValueAtTime(1, this.context.currentTime + 2);
     }
-    this.isPlaying = true;
+
+    // Restart loops with initial delay so they don't fire immediately
+    if (!this.isPlaying) {
+      this.isPlaying = true;
+
+      if (this.birdTimer) clearTimeout(this.birdTimer);
+      this.birdTimer = setTimeout(() => this.triggerBirdCall(), Math.random() * 5000 + 2000);
+
+      if (this.leafTimer) clearTimeout(this.leafTimer);
+      this.leafTimer = setTimeout(() => this.triggerLeafRustle(), Math.random() * 5000 + 1000);
+    }
   }
 
   pause() {
@@ -123,6 +212,8 @@ class AudioEngine {
       this.masterGain.gain.linearRampToValueAtTime(0, this.context.currentTime + 2);
     }
     this.isPlaying = false;
+    if (this.birdTimer) clearTimeout(this.birdTimer);
+    if (this.leafTimer) clearTimeout(this.leafTimer);
   }
 
   setDepth(depth) {

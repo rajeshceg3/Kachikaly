@@ -75,6 +75,18 @@ export class BiquadFilterNodeMock extends AudioNodeMock {
   }
 }
 
+export class OscillatorNodeMock extends AudioNodeMock {
+  constructor() {
+    super();
+    this.type = 'sine';
+    this.frequency = new AudioParamMock(440);
+    this.detune = new AudioParamMock(0);
+  }
+  start() {}
+  stop() {}
+  setPeriodicWave() {}
+}
+
 export class AudioContextMock {
   constructor() {
     this.currentTime = 0;
@@ -100,6 +112,7 @@ export class AudioContextMock {
   }
   createBufferSource() { return new AudioBufferSourceNodeMock(); }
   createBiquadFilter() { return new BiquadFilterNodeMock(); }
+  createOscillator() { return new OscillatorNodeMock(); }
 
   resume() {
     this.state = 'running';
