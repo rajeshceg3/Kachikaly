@@ -180,7 +180,7 @@ const PoolView = () => {
 
       {/* Compass Indicator - Appears on hesitation */}
       <AnimatePresence>
-        {showCompass && (
+        {showCompass && !isIdle && (
            <motion.div
              data-testid="compass"
              initial={{ opacity: 0 }}
